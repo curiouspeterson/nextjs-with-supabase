@@ -20,3 +20,8 @@ export const customFetch = async (path: string, options: RequestInit = {}) => {
   if (!res.ok) throw new Error('API request failed');
   return res.json();
 };
+
+export default {
+  createClient,
+  customFetch,
+};

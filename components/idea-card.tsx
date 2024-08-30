@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient, customFetch } from "@/utils/supabase/client";
 import { Button } from "./ui/button";
 import { ThumbsUp } from "lucide-react";
 import { Idea, Comment } from "@/types";
@@ -13,14 +12,25 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [showComments, setShowComments] = useState(false);
-  const supabase = createClient();
+  const [supabase, setSupabase] = useState<any>(null);
 
   useEffect(() => {
+    import('@/utils/supabase/client').then((module) => {
+      setSupabase({
+        createClient: module.createClient,
+        customFetch: module.customFetch,
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+
     const checkUpvoteStatus = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabase.createClient().auth.getUser();
         if (user) {
-          const data = await customFetch(`/upvotes?select=*&idea_id=eq.${idea.id}&user_id=eq.${user.id}`);
+          const data = await supabase.customFetch(`/upvotes?select=*&idea_id=eq.${idea.id}&user_id=eq.${user.id}`);
           setHasUpvoted(data.length > 0);
         }
       } catch (err) {
@@ -28,21 +38,21 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
       }
     };
     checkUpvoteStatus();
-  }, [idea.id]);
+  }, [idea.id, supabase]);
 
   const handleUpvote = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.createClient().auth.getUser();
       if (!user) return;
 
       if (hasUpvoted) {
-        await customFetch(`/upvotes?idea_id=eq.${idea.id}&user_id=eq.${user.id}`, {
+        await supabase.customFetch(`/upvotes?idea_id=eq.${idea.id}&user_id=eq.${user.id}`, {
           method: 'DELETE',
         });
         setUpvotes(upvotes - 1);
         setHasUpvoted(false);
       } else {
-        await customFetch('/upvotes', {
+        await supabase.customFetch('/upvotes', {
           method: 'POST',
           body: JSON.stringify({ idea_id: idea.id, user_id: user.id }),
         });
@@ -57,7 +67,7 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
   const toggleComments = async () => {
     if (!showComments) {
       try {
-        const data = await customFetch(`/comments?select=*&idea_id=eq.${idea.id}&order=created_at.asc`);
+        const data = await supabase.customFetch(`/comments?select=*&idea_id=eq.${idea.id}&order=created_at.asc`);
         setComments(data);
       } catch (error) {
         console.error("Error fetching comments:", error);
