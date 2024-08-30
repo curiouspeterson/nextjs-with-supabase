@@ -17,7 +17,7 @@ export const signUpAction = async (formData: FormData) => {
     return { error: "Name, email, and password are required" };
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -29,14 +29,18 @@ export const signUpAction = async (formData: FormData) => {
   });
 
   if (error) {
-    console.error(error.code + " " + error.message);
+    console.error("Sign-up error:", error);
     return encodedRedirect("error", "/sign-up", error.message);
-  } else {
+  } else if (data) {
+    console.log("Sign-up successful:", data);
     return encodedRedirect(
       "success",
       "/sign-up",
       "Thanks for signing up! Please check your email for a verification link.",
     );
+  } else {
+    console.error("Unexpected result: no data and no error");
+    return encodedRedirect("error", "/sign-up", "An unexpected error occurred");
   }
 };
 
