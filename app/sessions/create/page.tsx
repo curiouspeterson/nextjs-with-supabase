@@ -20,17 +20,26 @@ export default function CreateSession() {
     setIsSubmitting(true);
     setError(null);
 
-    const { data, error } = await supabase
-      .from("sessions")
-      .insert([{ title, prompt }])
-      .select();
+    try {
+      const { data, error } = await supabase
+        .from("sessions")
+        .insert([{ title, prompt }])
+        .select();
 
-    if (error) {
-      console.error("Error creating session:", error);
-      setError("Failed to create session. Please try again.");
+      if (error) {
+        console.error("Error creating session:", error);
+        setError(`Failed to create session: ${error.message}`);
+        setIsSubmitting(false);
+      } else if (data && data.length > 0) {
+        router.push(`/sessions/${data[0].id}`);
+      } else {
+        setError("No data returned after creating session");
+        setIsSubmitting(false);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setError("An unexpected error occurred");
       setIsSubmitting(false);
-    } else {
-      router.push(`/sessions/${data[0].id}`);
     }
   };
 
