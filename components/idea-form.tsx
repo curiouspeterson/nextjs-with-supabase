@@ -31,18 +31,23 @@ export default function IdeaForm({ sessionId }: { sessionId: string }) {
       return;
     }
 
-    const { error } = await supabase
-      .from("ideas")
-      .insert([{ session_id: sessionId, content, creator_id: userId }]);
+    try {
+      const { error } = await supabase
+        .from("ideas")
+        .insert([{ session_id: sessionId, content, creator_id: userId }]);
 
-    if (error) {
-      console.error("Error submitting idea:", error);
-      setError("Failed to submit idea. Please try again.");
-    } else {
-      setContent("");
+      if (error) {
+        console.error("Error submitting idea:", error);
+        setError("Failed to submit idea. Please try again.");
+      } else {
+        setContent("");
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setError("An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
   };
 
   return (

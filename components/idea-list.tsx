@@ -11,29 +11,35 @@ export default function IdeaList({ sessionId }: { sessionId: string }) {
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
-  useEffect(() => {
-    const fetchIdeas = async () => {
+  const fetchIdeas = async () => {
+    try {
       const { data, error } = await supabase
         .from("ideas")
         .select("*")
         .eq("session_id", sessionId)
-        .order("upvotes", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching ideas:", error);
         setError("Failed to load ideas");
       } else {
-        setIdeas(data as Idea[]);
+        setIdeas(data || []);
       }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setError("An unexpected error occurred");
+    } finally {
       setIsLoading(false);
-    };
+    }
+  };
 
+  useEffect(() => {
     fetchIdeas();
 
     // Set up real-time subscription
     const subscription = supabase
       .channel(`ideas_${sessionId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "ideas" }, fetchIdeas)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ideas", filter: `session_id=eq.${sessionId}` }, fetchIdeas)
       .subscribe();
 
     return () => {
@@ -46,9 +52,13 @@ export default function IdeaList({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="space-y-4">
-      {ideas.map((idea) => (
-        <IdeaCard key={idea.id} idea={idea} />
-      ))}
+      {ideas.length === 0 ? (
+        <p>No ideas yet. Be the first to submit one!</p>
+      ) : (
+        ideas.map((idea) => (
+          <IdeaCard key={idea.id} idea={idea} />
+        ))
+      )}
     </div>
   );
 }

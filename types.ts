@@ -12,6 +12,7 @@ export interface Idea {
   session_id: string;
   content: string;
   upvotes: number;
+  creator_id: string;
   created_at: string;
 }
 
