@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/utils/supabase/client";
+import { createClient, customFetch } from "@/utils/supabase/client";
 import { Button } from "./ui/button";
 import { ThumbsUp } from "lucide-react";
 import { Idea, Comment } from "@/types";
@@ -20,21 +20,11 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data, error } = await supabase
-            .from("upvotes")
-            .select("*")
-            .eq("idea_id", idea.id)
-            .eq("user_id", user.id)
-            .single();
-
-          if (error && error.code !== 'PGRST116') {
-            console.error("Error checking upvote status:", error);
-          } else {
-            setHasUpvoted(!!data);
-          }
+          const data = await customFetch(`/upvotes?select=*&idea_id=eq.${idea.id}&user_id=eq.${user.id}`);
+          setHasUpvoted(data.length > 0);
         }
       } catch (err) {
-        console.error("Unexpected error checking upvote status:", err);
+        console.error("Error checking upvote status:", err);
       }
     };
     checkUpvoteStatus();
@@ -46,21 +36,16 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
       if (!user) return;
 
       if (hasUpvoted) {
-        const { error } = await supabase
-          .from("upvotes")
-          .delete()
-          .eq("idea_id", idea.id)
-          .eq("user_id", user.id);
-
-        if (error) throw error;
+        await customFetch(`/upvotes?idea_id=eq.${idea.id}&user_id=eq.${user.id}`, {
+          method: 'DELETE',
+        });
         setUpvotes(upvotes - 1);
         setHasUpvoted(false);
       } else {
-        const { error } = await supabase
-          .from("upvotes")
-          .insert({ idea_id: idea.id, user_id: user.id });
-
-        if (error) throw error;
+        await customFetch('/upvotes', {
+          method: 'POST',
+          body: JSON.stringify({ idea_id: idea.id, user_id: user.id }),
+        });
         setUpvotes(upvotes + 1);
         setHasUpvoted(true);
       }
@@ -72,14 +57,8 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
   const toggleComments = async () => {
     if (!showComments) {
       try {
-        const { data, error } = await supabase
-          .from("comments")
-          .select("*")
-          .eq("idea_id", idea.id)
-          .order("created_at", { ascending: true });
-
-        if (error) throw error;
-        setComments(data || []);
+        const data = await customFetch(`/comments?select=*&idea_id=eq.${idea.id}&order=created_at.asc`);
+        setComments(data);
       } catch (error) {
         console.error("Error fetching comments:", error);
       }
