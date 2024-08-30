@@ -1,11 +1,5 @@
 import Link from "next/link";
-
-interface Session {
-  id: string;
-  title: string;
-  prompt: string;
-  created_at: string;
-}
+import { Session } from "@/types";
 
 export default function SessionCard({ session }: { session: Session }) {
   return (

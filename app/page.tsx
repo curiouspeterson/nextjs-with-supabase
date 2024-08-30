@@ -1,7 +1,14 @@
+import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
 import Hero from "@/components/hero";
 import SessionList from "@/components/session-list";
 
-export default function Index() {
+export default async function Index() {
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
+
+  // Use supabase here if needed
+
   return (
     <>
       <Hero />

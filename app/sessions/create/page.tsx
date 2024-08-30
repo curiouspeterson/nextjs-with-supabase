@@ -10,11 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 export default function CreateSession() {
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
     const { data, error } = await supabase
       .from("sessions")
       .insert([{ title, prompt }])
@@ -22,6 +27,8 @@ export default function CreateSession() {
 
     if (error) {
       console.error("Error creating session:", error);
+      setError("Failed to create session. Please try again.");
+      setIsSubmitting(false);
     } else {
       router.push(`/sessions/${data[0].id}`);
     }
@@ -53,7 +60,10 @@ export default function CreateSession() {
             required
           />
         </div>
-        <Button type="submit">Create Session</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Creating..." : "Create Session"}
+        </Button>
+        {error && <p className="text-red-500 mt-2">{error}</p>}
       </form>
     </div>
   );
