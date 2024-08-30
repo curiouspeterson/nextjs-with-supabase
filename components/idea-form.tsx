@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
+import { Input } from "./ui/input";
 
-export default function IdeaForm({ sessionId }) {
+export default function IdeaForm({ sessionId }: { sessionId: string }) {
   const [content, setContent] = useState("");
   const supabase = createClient();
 
@@ -25,9 +25,9 @@ export default function IdeaForm({ sessionId }) {
 
   return (
     <form onSubmit={handleSubmit} className="mb-8">
-      <Textarea
+      <Input
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContent(e.target.value)}
         placeholder="Share your idea..."
         className="mb-4"
         required

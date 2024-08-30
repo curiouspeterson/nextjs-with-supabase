@@ -4,9 +4,10 @@ import { createClient } from "@/utils/supabase/client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { User } from "@supabase/supabase-js";
 
 const HeaderAuth: React.FC = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const supabase = createClient();
 
   useEffect(() => {

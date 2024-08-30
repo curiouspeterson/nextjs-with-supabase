@@ -1,7 +1,7 @@
 import Hero from "@/components/hero";
 import SessionList from "@/components/session-list";
 
-export default async function Index() {
+export default function Index() {
   return (
     <>
       <Hero />

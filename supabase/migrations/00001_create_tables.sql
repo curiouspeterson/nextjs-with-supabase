@@ -1,0 +1,45 @@
+-- Create sessions table
+CREATE TABLE sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  creator_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create ideas table
+CREATE TABLE ideas (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  upvotes INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create comments table
+CREATE TABLE comments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  idea_id UUID REFERENCES ideas(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  parent_comment_id UUID REFERENCES comments(id)
+);
+
+-- Add RLS policies
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ideas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+
+-- Sessions policies
+CREATE POLICY "Sessions are viewable by everyone" ON sessions FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own sessions" ON sessions FOR INSERT WITH CHECK (auth.uid() = creator_id);
+
+-- Ideas policies
+CREATE POLICY "Ideas are viewable by everyone" ON ideas FOR SELECT USING (true);
+CREATE POLICY "Any user can insert ideas" ON ideas FOR INSERT WITH CHECK (true);
+CREATE POLICY "Any user can update idea upvotes" ON ideas FOR UPDATE USING (true) WITH CHECK (true);
+
+-- Comments policies
+CREATE POLICY "Comments are viewable by everyone" ON comments FOR SELECT USING (true);
+CREATE POLICY "Any user can insert comments" ON comments FOR INSERT WITH CHECK (true);

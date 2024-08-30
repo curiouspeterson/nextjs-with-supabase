@@ -1,6 +1,13 @@
 import Link from "next/link";
 
-export default function SessionCard({ session }) {
+interface Session {
+  id: string;
+  title: string;
+  prompt: string;
+  created_at: string;
+}
+
+export default function SessionCard({ session }: { session: Session }) {
   return (
     <Link href={`/sessions/${session.id}`}>
       <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">

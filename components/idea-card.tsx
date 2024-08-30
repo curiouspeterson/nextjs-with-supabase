@@ -4,8 +4,9 @@ import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "./ui/button";
 import { ThumbsUp } from "lucide-react";
+import { Idea } from "@/types";
 
-export default function IdeaCard({ idea }) {
+export default function IdeaCard({ idea }: { idea: Idea }) {
   const [upvotes, setUpvotes] = useState(idea.upvotes);
   const supabase = createClient();
 

@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import IdeaCard from "./idea-card";
+import IdeaCard from "@/components/idea-card";
 
-export default function IdeaList({ sessionId }) {
-  const [ideas, setIdeas] = useState([]);
+export default function IdeaList({ sessionId }: { sessionId: string }) {
+  const [ideas, setIdeas] = useState<Array<any>>([]);
   const supabase = createClient();
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export default function IdeaList({ sessionId }) {
 
   return (
     <div className="space-y-4">
-      {ideas.map((idea) => (
+      {ideas.map((idea: { id: string }) => (
         <IdeaCard key={idea.id} idea={idea} />
       ))}
     </div>

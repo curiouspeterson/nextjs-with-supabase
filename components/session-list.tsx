@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import SessionCard from "./session-card";
+import SessionCard from "@/components/session-card";
 
 export default function SessionList() {
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useState<any[]>([]);
   const supabase = createClient();
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export default function SessionList() {
       if (error) {
         console.error("Error fetching sessions:", error);
       } else {
-        setSessions(data);
+        setSessions(data || []);
       }
     };
 
@@ -27,7 +27,7 @@ export default function SessionList() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {sessions.map((session) => (
+      {sessions.map((session: any) => (
         <SessionCard key={session.id} session={session} />
       ))}
     </div>

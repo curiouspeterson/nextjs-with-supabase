@@ -1,40 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from '@supabase/supabase-js';
+
+// Remove the useEffect import if it's present
 import IdeaForm from "@/components/idea-form";
 import IdeaList from "@/components/idea-list";
 
-export default function SessionDetail({ params }) {
-  const [session, setSession] = useState(null);
-  const supabase = createClient();
+// Add this interface to define the shape of the params object
+interface SessionDetailProps {
+  params: {
+    id: string;
+  };
+}
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      const { data, error } = await supabase
-        .from("sessions")
-        .select("*")
-        .eq("id", params.id)
-        .single();
+// Update the function signature to use the new interface
+export default async function SessionPage({ params }: SessionDetailProps) {
+  // Add these lines to import the environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-      if (error) {
-        console.error("Error fetching session:", error);
-      } else {
-        setSession(data);
-      }
-    };
+  // Add non-null assertions
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
 
-    fetchSession();
-  }, [params.id]);
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  if (!session) {
-    return <div>Loading...</div>;
+  // Fetch the session data server-side
+  const { data: session, error } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("id", params.id)
+    .single();
+
+  if (error) {
+    // Handle the error appropriately
+    return <div>Error loading session</div>;
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-4">{session.title}</h1>
-      <p className="text-lg mb-8">{session.prompt}</p>
+    <div>
+      {/* Render your session data here */}
+      <h1>Session {session.id}</h1>
+      {/* ... other session details ... */}
       <IdeaForm sessionId={session.id} />
       <IdeaList sessionId={session.id} />
     </div>
