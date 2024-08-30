@@ -1,68 +1,49 @@
-import { signOutAction } from "@/app/actions";
-import { hasEnvVars } from "@/utils/supabase/check-env-vars";
+"use client";
+
+import { createClient } from "@/utils/supabase/client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { createClient } from "@/utils/supabase/server";
 
-export default async function AuthButton() {
-  const {
-    data: { user },
-  } = await createClient().auth.getUser();
+const HeaderAuth: React.FC = () => {
+  const [user, setUser] = useState(null);
+  const supabase = createClient();
 
-  if (!hasEnvVars) {
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  if (user) {
     return (
-      <>
-        <div className="flex gap-4 items-center">
-          <div>
-            <Badge
-              variant={"default"}
-              className="font-normal pointer-events-none"
-            >
-              Please update .env.local file with anon key and url
-            </Badge>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              asChild
-              size="sm"
-              variant={"outline"}
-              disabled
-              className="opacity-75 cursor-none pointer-events-none"
-            >
-              <Link href="/sign-in">Sign in</Link>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              variant={"default"}
-              disabled
-              className="opacity-75 cursor-none pointer-events-none"
-            >
-              <Link href="/sign-up">Sign up</Link>
-            </Button>
-          </div>
-        </div>
-      </>
+      <div className="flex items-center space-x-4">
+        <span>Hello, {user.email}</span>
+        <Button onClick={handleSignOut}>Sign Out</Button>
+      </div>
     );
   }
-  return user ? (
-    <div className="flex items-center gap-4">
-      Hey, {user.email}!
-      <form action={signOutAction}>
-        <Button type="submit" variant={"outline"}>
-          Sign out
-        </Button>
-      </form>
-    </div>
-  ) : (
-    <div className="flex gap-2">
-      <Button asChild size="sm" variant={"outline"}>
-        <Link href="/sign-in">Sign in</Link>
-      </Button>
-      <Button asChild size="sm" variant={"default"}>
-        <Link href="/sign-up">Sign up</Link>
-      </Button>
+
+  return (
+    <div className="space-x-4">
+      <Link href="/sign-in">
+        <Button variant="outline">Sign In</Button>
+      </Link>
+      <Link href="/sign-up">
+        <Button>Sign Up</Button>
+      </Link>
     </div>
   );
-}
+};
+
+export default HeaderAuth;
