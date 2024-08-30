@@ -17,6 +17,37 @@ export const signUpAction = async (formData: FormData) => {
     return { error: "Name, email, and password are required" };
   }
 
+  // In development, bypass email verification
+  if (process.env.NODE_ENV === 'development') {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+        emailRedirectTo: `${origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      console.error("Sign-up error:", error);
+      return encodedRedirect("error", "/sign-up", error.message);
+    }
+
+    // Automatically sign in the user
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      console.error("Auto sign-in error:", signInError);
+      return encodedRedirect("error", "/sign-up", "Sign-up successful, but auto sign-in failed. Please sign in manually.");
+    }
+
+    return redirect("/protected");
+  }
+
+  // Production sign-up process
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -36,23 +67,6 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", error.message);
   } else if (data) {
     console.log("Sign-up successful:", data);
-    
-    // Local development workaround
-    if (process.env.NODE_ENV === 'development') {
-      // Instead of updating the user, we'll sign them in directly
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        console.error("Auto sign-in error:", signInError);
-        return encodedRedirect("error", "/sign-up", "Sign-up successful, but auto sign-in failed. Please sign in manually.");
-      }
-
-      return redirect("/protected");
-    }
-    
     return encodedRedirect(
       "success",
       "/sign-up",
