@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { Session, Idea } from "@/types";
-import IdeaForm from "./idea-form";
+import { Session } from "@/types";
 import IdeaList from "./idea-list";
 
 export default function SessionDetail({ sessionId }: { sessionId: string }) {
@@ -40,7 +39,6 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
     <div>
       <h1 className="text-2xl font-bold mb-4">{session.title}</h1>
       <p className="mb-6">{session.prompt}</p>
-      <IdeaForm sessionId={session.id} />
       <IdeaList sessionId={session.id} />
     </div>
   );

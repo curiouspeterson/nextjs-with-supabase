@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import IdeaCard from "@/components/idea-card";
+import IdeaForm from "@/components/idea-form";
 import { Idea } from "@/types";
 
 export default function IdeaList({ sessionId }: { sessionId: string }) {
@@ -47,18 +48,25 @@ export default function IdeaList({ sessionId }: { sessionId: string }) {
     };
   }, [sessionId]);
 
+  const handleNewIdea = (newIdea: Idea) => {
+    setIdeas(prevIdeas => [newIdea, ...prevIdeas]);
+  };
+
   if (isLoading) return <div>Loading ideas...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="space-y-4">
-      {ideas.length === 0 ? (
-        <p>No ideas yet. Be the first to submit one!</p>
-      ) : (
-        ideas.map((idea) => (
-          <IdeaCard key={idea.id} idea={idea} />
-        ))
-      )}
+    <div>
+      <IdeaForm sessionId={sessionId} onIdeaAdded={handleNewIdea} />
+      <div className="space-y-4">
+        {ideas.length === 0 ? (
+          <p>No ideas yet. Be the first to submit one!</p>
+        ) : (
+          ideas.map((idea) => (
+            <IdeaCard key={idea.id} idea={idea} />
+          ))
+        )}
+      </div>
     </div>
   );
 }

@@ -4,8 +4,14 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Idea } from "@/types";
 
-export default function IdeaForm({ sessionId }: { sessionId: string }) {
+interface IdeaFormProps {
+  sessionId: string;
+  onIdeaAdded: (newIdea: Idea) => void;
+}
+
+export default function IdeaForm({ sessionId, onIdeaAdded }: IdeaFormProps) {
   const supabase = createClient();
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,15 +38,18 @@ export default function IdeaForm({ sessionId }: { sessionId: string }) {
     }
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("ideas")
-        .insert([{ session_id: sessionId, content, creator_id: userId }]);
+        .insert([{ session_id: sessionId, content, creator_id: userId }])
+        .select()
+        .single();
 
       if (error) {
         console.error("Error submitting idea:", error);
         setError("Failed to submit idea. Please try again.");
-      } else {
+      } else if (data) {
         setContent("");
+        onIdeaAdded(data as Idea);
       }
     } catch (err) {
       console.error("Unexpected error:", err);
