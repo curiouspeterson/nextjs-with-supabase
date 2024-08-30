@@ -30,9 +30,29 @@ export const signUpAction = async (formData: FormData) => {
 
   if (error) {
     console.error("Sign-up error:", error);
+    if (error.message.includes("Email rate limit exceeded")) {
+      return encodedRedirect("error", "/sign-up", "Too many sign-up attempts. Please try again later or use a different email address.");
+    }
     return encodedRedirect("error", "/sign-up", error.message);
   } else if (data) {
     console.log("Sign-up successful:", data);
+    
+    // Local development workaround
+    if (process.env.NODE_ENV === 'development') {
+      // Instead of updating the user, we'll sign them in directly
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        console.error("Auto sign-in error:", signInError);
+        return encodedRedirect("error", "/sign-up", "Sign-up successful, but auto sign-in failed. Please sign in manually.");
+      }
+
+      return redirect("/protected");
+    }
+    
     return encodedRedirect(
       "success",
       "/sign-up",
