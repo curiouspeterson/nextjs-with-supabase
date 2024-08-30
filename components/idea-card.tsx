@@ -11,7 +11,6 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
   const [upvotes, setUpvotes] = useState(idea.upvotes);
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [showComments, setShowComments] = useState(false);
   const [supabase, setSupabase] = useState<any>(null);
 
   useEffect(() => {
@@ -37,7 +36,18 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
         console.error("Error checking upvote status:", err);
       }
     };
+
+    const fetchComments = async () => {
+      try {
+        const data = await supabase.customFetch(`/comments?select=*&idea_id=eq.${idea.id}&order=created_at.asc`);
+        setComments(data);
+      } catch (error) {
+        console.error("Error fetching comments:", error);
+      }
+    };
+
     checkUpvoteStatus();
+    fetchComments();
   }, [idea.id, supabase]);
 
   const handleUpvote = async () => {
@@ -64,18 +74,6 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
     }
   };
 
-  const toggleComments = async () => {
-    if (!showComments) {
-      try {
-        const data = await supabase.customFetch(`/comments?select=*&idea_id=eq.${idea.id}&order=created_at.asc`);
-        setComments(data);
-      } catch (error) {
-        console.error("Error fetching comments:", error);
-      }
-    }
-    setShowComments(!showComments);
-  };
-
   const handleNewComment = (newComment: Comment) => {
     setComments(prevComments => [...prevComments, newComment]);
   };
@@ -83,7 +81,7 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
   return (
     <div className="border rounded-lg p-4">
       <p className="mb-4">{idea.content}</p>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <span className="text-sm text-gray-500">
           Submitted: {new Date(idea.created_at).toLocaleString()}
         </span>
@@ -92,15 +90,11 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
           {upvotes}
         </Button>
       </div>
-      <Button onClick={toggleComments} className="mt-2">
-        {showComments ? "Hide Comments" : "Show Comments"}
-      </Button>
-      {showComments && (
-        <>
-          <CommentList comments={comments} />
-          <CommentForm ideaId={idea.id} onCommentAdded={handleNewComment} />
-        </>
-      )}
+      <div className="mt-4">
+        <h3 className="font-semibold mb-2">Comments</h3>
+        <CommentList comments={comments} />
+        <CommentForm ideaId={idea.id} onCommentAdded={handleNewComment} />
+      </div>
     </div>
   );
 }

@@ -2,33 +2,49 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { Session } from "@/types";
+import { Session, Idea } from "@/types";
 import IdeaList from "./idea-list";
 
 export default function SessionDetail({ sessionId }: { sessionId: string }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [topIdeas, setTopIdeas] = useState<Idea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
-    const fetchSession = async () => {
-      const { data, error } = await supabase
-        .from("sessions")
-        .select("*")
-        .eq("id", sessionId)
-        .single();
+    const fetchSessionAndTopIdeas = async () => {
+      try {
+        // Fetch session details
+        const { data: sessionData, error: sessionError } = await supabase
+          .from("sessions")
+          .select("*")
+          .eq("id", sessionId)
+          .single();
 
-      if (error) {
-        setError("Error fetching session");
-        setIsLoading(false);
-      } else {
-        setSession(data);
+        if (sessionError) throw sessionError;
+        setSession(sessionData);
+
+        // Fetch top 3 ideas
+        const { data: ideasData, error: ideasError } = await supabase
+          .from("ideas")
+          .select("*")
+          .eq("session_id", sessionId)
+          .order("upvotes", { ascending: false })
+          .limit(3);
+
+        if (ideasError) throw ideasError;
+        setTopIdeas(ideasData);
+
+      } catch (error) {
+        console.error("Error fetching session or ideas:", error);
+        setError("Error fetching session details");
+      } finally {
         setIsLoading(false);
       }
     };
 
-    fetchSession();
+    fetchSessionAndTopIdeas();
   }, [sessionId]);
 
   if (isLoading) return <div>Loading session...</div>;
@@ -39,6 +55,24 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
     <div>
       <h1 className="text-2xl font-bold mb-4">{session.title}</h1>
       <p className="mb-6">{session.prompt}</p>
+      
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-3">Top Ideas</h2>
+        {topIdeas.length > 0 ? (
+          <ul className="space-y-2">
+            {topIdeas.map((idea) => (
+              <li key={idea.id} className="border p-3 rounded">
+                <p>{idea.content}</p>
+                <span className="text-sm text-gray-500">Upvotes: {idea.upvotes}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No ideas submitted yet.</p>
+        )}
+      </div>
+
+      <h2 className="text-xl font-semibold mb-3">All Ideas</h2>
       <IdeaList sessionId={session.id} />
     </div>
   );

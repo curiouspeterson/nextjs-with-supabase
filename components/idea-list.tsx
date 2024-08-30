@@ -18,7 +18,7 @@ export default function IdeaList({ sessionId }: { sessionId: string }) {
         .from("ideas")
         .select("*")
         .eq("session_id", sessionId)
-        .order("created_at", { ascending: false });
+        .order("upvotes", { ascending: false });
 
       if (error) {
         console.error("Error fetching ideas:", error);
@@ -49,7 +49,7 @@ export default function IdeaList({ sessionId }: { sessionId: string }) {
   }, [sessionId]);
 
   const handleNewIdea = (newIdea: Idea) => {
-    setIdeas(prevIdeas => [newIdea, ...prevIdeas]);
+    setIdeas(prevIdeas => [newIdea, ...prevIdeas].sort((a, b) => b.upvotes - a.upvotes));
   };
 
   if (isLoading) return <div>Loading ideas...</div>;
