@@ -61,17 +61,22 @@ export const signUpAction = async (formData: FormData) => {
 
   if (error) {
     console.error("Sign-up error:", error);
-    if (error.message.includes("Email rate limit exceeded")) {
-      return encodedRedirect("error", "/sign-up", "Too many sign-up attempts. Please try again later or use a different email address.");
-    }
-    return encodedRedirect("error", "/sign-up", error.message);
+    return encodedRedirect("error", "/sign-up", `Sign-up error: ${error.message}`);
   } else if (data) {
     console.log("Sign-up successful:", data);
-    return encodedRedirect(
-      "success",
-      "/sign-up",
-      "Thanks for signing up! Please check your email for a verification link.",
-    );
+    if (data.user && !data.user.confirmed_at) {
+      return encodedRedirect(
+        "success",
+        "/sign-up",
+        "Thanks for signing up! Please check your email for a verification link. If you don't receive an email, please contact support."
+      );
+    } else {
+      return encodedRedirect(
+        "success",
+        "/sign-up",
+        "Sign-up successful. You can now log in."
+      );
+    }
   } else {
     console.error("Unexpected result: no data and no error");
     return encodedRedirect("error", "/sign-up", "An unexpected error occurred");
