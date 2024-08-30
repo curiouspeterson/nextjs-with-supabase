@@ -15,14 +15,17 @@ interface CommentFormProps {
 export default function CommentForm({ ideaId, parentCommentId, onCommentAdded }: CommentFormProps) {
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
+      setError("You must be logged in to submit a comment");
       setIsSubmitting(false);
       return;
     }
@@ -40,6 +43,7 @@ export default function CommentForm({ ideaId, parentCommentId, onCommentAdded }:
 
     if (error) {
       console.error("Error submitting comment:", error);
+      setError("Failed to submit comment. Please try again.");
     } else if (data) {
       setContent("");
       onCommentAdded(data);
@@ -60,6 +64,7 @@ export default function CommentForm({ ideaId, parentCommentId, onCommentAdded }:
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Submitting..." : "Submit Comment"}
       </Button>
+      {error && <p className="text-red-500 mt-2">{error}</p>}
     </form>
   );
 }

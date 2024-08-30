@@ -74,7 +74,7 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
   };
 
   const handleNewComment = (newComment: Comment) => {
-    setComments([...comments, newComment]);
+    setComments(prevComments => [...prevComments, newComment]);
   };
 
   return (
