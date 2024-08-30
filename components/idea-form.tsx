@@ -1,25 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
 export default function IdeaForm({ sessionId }: { sessionId: string }) {
   const supabase = createClient();
-
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    fetchUser();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
+    if (!userId) {
+      setError("You must be logged in to submit an idea");
+      setIsSubmitting(false);
+      return;
+    }
+
     const { error } = await supabase
       .from("ideas")
-      .insert([{ session_id: sessionId, content }]);
+      .insert([{ session_id: sessionId, content, creator_id: userId }]);
 
     if (error) {
       console.error("Error submitting idea:", error);
@@ -40,10 +54,11 @@ export default function IdeaForm({ sessionId }: { sessionId: string }) {
         className="mb-4"
         required
       />
-      <Button type="submit" disabled={isSubmitting}>
+      <Button type="submit" disabled={isSubmitting || !userId}>
         {isSubmitting ? "Submitting..." : "Submit Idea"}
       </Button>
       {error && <p className="text-red-500 mt-2">{error}</p>}
+      {!userId && <p className="text-yellow-500 mt-2">Please log in to submit ideas.</p>}
     </form>
   );
 }
