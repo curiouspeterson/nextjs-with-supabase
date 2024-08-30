@@ -17,57 +17,71 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
 
   useEffect(() => {
     const checkUpvoteStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("upvotes")
-          .select("*")
-          .eq("idea_id", idea.id)
-          .eq("user_id", user.id)
-          .single();
-        setHasUpvoted(!!data);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data, error } = await supabase
+            .from("upvotes")
+            .select("*")
+            .eq("idea_id", idea.id)
+            .eq("user_id", user.id)
+            .single();
+
+          if (error && error.code !== 'PGRST116') {
+            console.error("Error checking upvote status:", error);
+          } else {
+            setHasUpvoted(!!data);
+          }
+        }
+      } catch (err) {
+        console.error("Unexpected error checking upvote status:", err);
       }
     };
     checkUpvoteStatus();
   }, [idea.id]);
 
   const handleUpvote = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    if (hasUpvoted) {
-      const { error } = await supabase
-        .from("upvotes")
-        .delete()
-        .eq("idea_id", idea.id)
-        .eq("user_id", user.id);
+      if (hasUpvoted) {
+        const { error } = await supabase
+          .from("upvotes")
+          .delete()
+          .eq("idea_id", idea.id)
+          .eq("user_id", user.id);
 
-      if (!error) {
+        if (error) throw error;
         setUpvotes(upvotes - 1);
         setHasUpvoted(false);
-      }
-    } else {
-      const { error } = await supabase
-        .from("upvotes")
-        .insert({ idea_id: idea.id, user_id: user.id });
+      } else {
+        const { error } = await supabase
+          .from("upvotes")
+          .insert({ idea_id: idea.id, user_id: user.id });
 
-      if (!error) {
+        if (error) throw error;
         setUpvotes(upvotes + 1);
         setHasUpvoted(true);
       }
+    } catch (error) {
+      console.error("Error handling upvote:", error);
     }
   };
 
   const toggleComments = async () => {
     if (!showComments) {
-      const { data, error } = await supabase
-        .from("comments")
-        .select("*")
-        .eq("idea_id", idea.id)
-        .order("created_at", { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from("comments")
+          .select("*")
+          .eq("idea_id", idea.id)
+          .order("created_at", { ascending: true });
 
-      if (!error) {
+        if (error) throw error;
         setComments(data || []);
+      } catch (error) {
+        console.error("Error fetching comments:", error);
       }
     }
     setShowComments(!showComments);
