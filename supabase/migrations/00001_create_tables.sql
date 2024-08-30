@@ -26,10 +26,30 @@ CREATE TABLE comments (
   parent_comment_id UUID REFERENCES comments(id)
 );
 
--- Add RLS policies
-ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE ideas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+-- Modify comments table
+ALTER TABLE comments
+ADD COLUMN creator_id UUID REFERENCES auth.users(id);
+
+-- Create upvotes table
+CREATE TABLE upvotes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  idea_id UUID REFERENCES ideas(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(idea_id, user_id)
+);
+
+-- Add RLS policies for upvotes
+ALTER TABLE upvotes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can insert their own upvotes" ON upvotes
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own upvotes" ON upvotes
+  FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Upvotes are viewable by everyone" ON upvotes
+  FOR SELECT USING (true);
 
 -- Sessions policies
 CREATE POLICY "Sessions are viewable by everyone" ON sessions FOR SELECT USING (true);
