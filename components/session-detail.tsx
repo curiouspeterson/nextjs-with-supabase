@@ -137,7 +137,7 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
         </div>
       )}
       
-      {session.creator_id === currentUserId && (
+      {currentUserId && session.creator_id === currentUserId && (
         <div className="mb-4">
           <h3 className="text-lg font-semibold">Start Timed Round</h3>
           <div className="flex space-x-2">
@@ -180,7 +180,7 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
         isRoundActive={isRoundActive}
       />
       
-      {session.is_private && (
+      {currentUserId && session.is_private && (
         <div className="mt-8">
           <h3 className="text-lg font-semibold mb-4">Invite Participants</h3>
           <InviteForm sessionId={session.id} />

@@ -18,6 +18,7 @@ export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, on
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const supabase = createClient();
 
   const fetchIdeas = async () => {
@@ -40,6 +41,12 @@ export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, on
 
   useEffect(() => {
     fetchIdeas();
+
+    const fetchCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    fetchCurrentUser();
 
     const subscription = supabase
       .channel(`ideas_${sessionId}`)
@@ -91,7 +98,9 @@ export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, on
 
   return (
     <div>
-      <IdeaForm sessionId={sessionId} onIdeaAdded={handleNewIdea} isDisabled={!isRoundActive} />
+      {currentUserId && (
+        <IdeaForm sessionId={sessionId} onIdeaAdded={handleNewIdea} isDisabled={!isRoundActive} />
+      )}
       <div className="space-y-4">
         {ideas.length === 0 ? (
           <p>No ideas yet. Be the first to submit one!</p>
@@ -103,6 +112,7 @@ export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, on
               sessionCreatorId={sessionCreatorId}
               onDelete={handleDeleteIdea}
               onUpdate={handleIdeaUpdate}
+              currentUserId={currentUserId}
             />
           ))
         )}

@@ -13,26 +13,23 @@ interface IdeaCardProps {
   sessionCreatorId: string;
   onDelete: (ideaId: string) => void;
   onUpdate: (updatedIdea: Idea) => void;
+  currentUserId: string | null;
 }
 
-export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }: IdeaCardProps) {
+export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate, currentUserId }: IdeaCardProps) {
   const [upvotes, setUpvotes] = useState(idea.upvotes);
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
-    const fetchUserAndCheckUpvote = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id || null);
-
-      if (user) {
+    const fetchUpvoteStatus = async () => {
+      if (currentUserId) {
         const { data, error } = await supabase
           .from("upvotes")
           .select("*")
           .eq("idea_id", idea.id)
-          .eq("user_id", user.id)
+          .eq("user_id", currentUserId)
           .maybeSingle();
 
         if (error) {
@@ -57,9 +54,9 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
       }
     };
 
-    fetchUserAndCheckUpvote();
+    fetchUpvoteStatus();
     fetchComments();
-  }, [idea.id, supabase]);
+  }, [idea.id, currentUserId, supabase]);
 
   const handleUpvote = async () => {
     if (!currentUserId) return;
@@ -134,7 +131,7 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
           )}
         </div>
         <div className="flex items-center">
-          <Button onClick={handleUpvote} variant="outline" size="sm" className="mr-2">
+          <Button onClick={handleUpvote} variant="outline" size="sm" className="mr-2" disabled={!currentUserId}>
             <ThumbsUp className={`mr-2 h-4 w-4 ${hasUpvoted ? 'fill-current' : ''}`} />
             {upvotes}
           </Button>
@@ -148,7 +145,7 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
       <div className="mt-4">
         <h3 className="font-semibold mb-2">Comments</h3>
         <CommentList comments={comments} ideaId={idea.id} onCommentAdded={handleNewComment} />
-        <CommentForm ideaId={idea.id} onCommentAdded={handleNewComment} />
+        {currentUserId && <CommentForm ideaId={idea.id} onCommentAdded={handleNewComment} />}
       </div>
     </div>
   );
