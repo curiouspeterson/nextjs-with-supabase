@@ -92,10 +92,9 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
     if (!supabase || !currentUserId) return;
 
     try {
-      const { error } = await supabase.createClient()
-        .from("ideas")
-        .delete()
-        .eq("id", idea.id);
+      const { error } = await supabase.customFetch(`/ideas?id=eq.${idea.id}`, {
+        method: 'DELETE',
+      });
 
       if (error) throw error;
 

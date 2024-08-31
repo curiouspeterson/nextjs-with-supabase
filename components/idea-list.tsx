@@ -21,21 +21,11 @@ export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, on
 
   const fetchIdeas = async () => {
     try {
-      const { data, error } = await supabase
-        .from("ideas")
-        .select("*")
-        .eq("session_id", sessionId)
-        .order("upvotes", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching ideas:", error);
-        setError("Failed to load ideas");
-      } else {
-        setIdeas(data || []);
-      }
+      const data = await supabase.customFetch(`/ideas?select=*&session_id=eq.${sessionId}&order=upvotes.desc`);
+      setIdeas(data || []);
     } catch (err) {
-      console.error("Unexpected error:", err);
-      setError("An unexpected error occurred");
+      console.error("Error fetching ideas:", err);
+      setError("Failed to load ideas");
     } finally {
       setIsLoading(false);
     }
@@ -61,10 +51,9 @@ export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, on
 
   const handleDeleteIdea = async (ideaId: string) => {
     try {
-      const { error } = await supabase
-        .from("ideas")
-        .delete()
-        .eq("id", ideaId);
+      const { error } = await supabase.customFetch(`/ideas?id=eq.${ideaId}`, {
+        method: 'DELETE',
+      });
 
       if (error) throw error;
 
