@@ -58,21 +58,11 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
   }, [sessionId]);
 
   const handleIdeaUpdate = (updatedIdea: Idea) => {
-    setTopIdeas(prevTopIdeas => {
-      const updatedTopIdeas = prevTopIdeas.map(idea => 
-        idea.id === updatedIdea.id ? updatedIdea : idea
-      );
-      return updatedTopIdeas
-        .sort((a, b) => b.upvotes - a.upvotes)
-        .slice(0, 3);
-    });
+    fetchSessionAndTopIdeas();
   };
 
   const handleIdeaDelete = (deletedIdeaId: string) => {
-    setTopIdeas(prevTopIdeas => 
-      prevTopIdeas.filter(idea => idea.id !== deletedIdeaId)
-    );
-    fetchSessionAndTopIdeas(); // Refetch to ensure we have the top 3 ideas
+    fetchSessionAndTopIdeas();
   };
 
   if (isLoading) return <div>Loading session...</div>;
