@@ -8,6 +8,7 @@ export interface Session {
   time_limit: number | null;
   is_private: boolean;
   invite_code: string;
+  resources: string[]; // Add this line
 }
 
 export interface Idea {

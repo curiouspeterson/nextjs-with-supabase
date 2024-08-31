@@ -12,7 +12,8 @@ CREATE TABLE sessions (
 ALTER TABLE sessions
 ADD COLUMN time_limit INTEGER,
 ADD COLUMN is_private BOOLEAN DEFAULT false,
-ADD COLUMN invite_code UUID DEFAULT uuid_generate_v4();
+ADD COLUMN invite_code UUID DEFAULT uuid_generate_v4(),
+ADD COLUMN resources TEXT[];
 
 -- Create ideas table
 CREATE TABLE ideas (

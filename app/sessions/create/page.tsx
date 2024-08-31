@@ -52,7 +52,7 @@ export default function CreateSession() {
           creator_id: userId,
           time_limit: timeLimit,
           is_private: isPrivate,
-          resources: resources
+          resources: resources // Make sure this line is present
         }])
         .select();
 
