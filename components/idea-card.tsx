@@ -28,28 +28,32 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
       setCurrentUserId(user?.id || null);
 
       if (user) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("upvotes")
           .select("*")
           .eq("idea_id", idea.id)
           .eq("user_id", user.id)
-          .single();
-        setHasUpvoted(!!data);
+          .maybeSingle();
+
+        if (error) {
+          console.error("Error checking upvote status:", error);
+        } else {
+          setHasUpvoted(!!data);
+        }
       }
     };
 
     const fetchComments = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("comments")
-          .select("*")
-          .eq("idea_id", idea.id)
-          .order("created_at", { ascending: true });
+      const { data, error } = await supabase
+        .from("comments")
+        .select("*")
+        .eq("idea_id", idea.id)
+        .order("created_at", { ascending: true });
 
-        if (error) throw error;
-        setComments(data || []);
-      } catch (error) {
+      if (error) {
         console.error("Error fetching comments:", error);
+      } else {
+        setComments(data || []);
       }
     };
 
@@ -62,27 +66,32 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
 
     try {
       if (hasUpvoted) {
-        await supabase
+        const { error } = await supabase
           .from("upvotes")
           .delete()
           .eq("idea_id", idea.id)
           .eq("user_id", currentUserId);
+
+        if (error) throw error;
         setUpvotes(prev => prev - 1);
         setHasUpvoted(false);
       } else {
-        await supabase
+        const { error } = await supabase
           .from("upvotes")
           .insert({ idea_id: idea.id, user_id: currentUserId });
+
+        if (error) throw error;
         setUpvotes(prev => prev + 1);
         setHasUpvoted(true);
       }
 
       const updatedIdea = { ...idea, upvotes: hasUpvoted ? upvotes - 1 : upvotes + 1 };
-      await supabase
+      const { error } = await supabase
         .from("ideas")
         .update({ upvotes: updatedIdea.upvotes })
         .eq("id", idea.id);
 
+      if (error) throw error;
       onUpdate(updatedIdea);
     } catch (error) {
       console.error("Error handling upvote:", error);
@@ -99,7 +108,6 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
         .eq("id", idea.id);
 
       if (error) throw error;
-
       onDelete(idea.id);
     } catch (error) {
       console.error("Error deleting idea:", error);
