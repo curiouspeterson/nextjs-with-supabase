@@ -55,7 +55,10 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
 
     try {
       const { data: { user } } = await supabase.createClient().auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.error("User not logged in");
+        return;
+      }
 
       if (hasUpvoted) {
         await supabase.customFetch(`/upvotes?idea_id=eq.${idea.id}&user_id=eq.${user.id}`, {
