@@ -57,12 +57,12 @@ export default function CommentForm({ ideaId, parentCommentId, onCommentAdded }:
       <Input
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Add a comment..."
+        placeholder={parentCommentId ? "Write a reply..." : "Add a comment..."}
         className="mb-2"
         required
       />
       <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Submitting..." : "Submit Comment"}
+        {isSubmitting ? "Submitting..." : (parentCommentId ? "Reply" : "Comment")}
       </Button>
       {error && <p className="text-red-500 mt-2">{error}</p>}
     </form>

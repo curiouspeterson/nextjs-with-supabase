@@ -1,21 +1,43 @@
+import { useState } from "react";
 import { Comment } from "@/types";
+import CommentForm from "./comment-form";
 
-export default function CommentList({ comments }: { comments: Comment[] }) {
+interface CommentListProps {
+  comments: Comment[];
+  ideaId: string;
+  onCommentAdded: (newComment: Comment) => void;
+}
+
+export default function CommentList({ comments, ideaId, onCommentAdded }: CommentListProps) {
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+
   const renderComment = (comment: Comment) => (
-    <div key={comment.id} className="ml-4 mt-2">
+    <div key={comment.id} className="border-l-2 border-gray-200 pl-4 my-4">
       <p>{comment.content}</p>
-      <span className="text-xs text-gray-500">
-        {new Date(comment.created_at).toLocaleString()}
-      </span>
-    </div>
-  );
-
-  const renderCommentThread = (comment: Comment) => (
-    <div key={comment.id}>
-      {renderComment(comment)}
+      <div className="text-sm text-gray-500 mt-1 flex justify-between items-center">
+        <span>{new Date(comment.created_at).toLocaleString()}</span>
+        {!comment.parent_comment_id && (
+          <button 
+            onClick={() => setReplyingTo(comment.id)}
+            className="text-blue-500 hover:underline"
+          >
+            Reply
+          </button>
+        )}
+      </div>
+      {replyingTo === comment.id && (
+        <CommentForm 
+          ideaId={ideaId} 
+          parentCommentId={comment.id} 
+          onCommentAdded={(newComment) => {
+            onCommentAdded(newComment);
+            setReplyingTo(null);
+          }}
+        />
+      )}
       {comments
         .filter(c => c.parent_comment_id === comment.id)
-        .map(renderCommentThread)}
+        .map(renderComment)}
     </div>
   );
 
@@ -23,7 +45,7 @@ export default function CommentList({ comments }: { comments: Comment[] }) {
 
   return (
     <div className="mt-4">
-      {topLevelComments.map(renderCommentThread)}
+      {topLevelComments.map(renderComment)}
     </div>
   );
 }

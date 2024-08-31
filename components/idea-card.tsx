@@ -129,7 +129,7 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
       </div>
       <div className="mt-4">
         <h3 className="font-semibold mb-2">Comments</h3>
-        <CommentList comments={comments} />
+        <CommentList comments={comments} ideaId={idea.id} onCommentAdded={handleNewComment} />
         <CommentForm ideaId={idea.id} onCommentAdded={handleNewComment} />
       </div>
     </div>
