@@ -10,9 +10,10 @@ interface IdeaListProps {
   sessionId: string;
   sessionCreatorId: string;
   onIdeaUpdate: (updatedIdea: Idea) => void;
+  onIdeaDelete: (deletedIdeaId: string) => void;
 }
 
-export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate }: IdeaListProps) {
+export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, onIdeaDelete }: IdeaListProps) {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,8 +59,20 @@ export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate }: 
     onIdeaUpdate(newIdea);
   };
 
-  const handleDeleteIdea = (ideaId: string) => {
-    setIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
+  const handleDeleteIdea = async (ideaId: string) => {
+    try {
+      const { error } = await supabase
+        .from("ideas")
+        .delete()
+        .eq("id", ideaId);
+
+      if (error) throw error;
+
+      setIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
+      onIdeaDelete(ideaId);
+    } catch (error) {
+      console.error("Error deleting idea:", error);
+    }
   };
 
   const handleIdeaUpdate = (updatedIdea: Idea) => {

@@ -75,7 +75,6 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
         setHasUpvoted(true);
       }
 
-      // Update the idea's upvote count in the database
       const updatedIdea = { ...idea, upvotes: hasUpvoted ? upvotes - 1 : upvotes + 1 };
       await supabase.customFetch(`/ideas?id=eq.${idea.id}`, {
         method: 'PATCH',

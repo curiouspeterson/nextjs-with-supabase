@@ -14,7 +14,6 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
 
   const fetchSessionAndTopIdeas = async () => {
     try {
-      // Fetch session details
       const { data: sessionData, error: sessionError } = await supabase
         .from("sessions")
         .select("*")
@@ -24,7 +23,6 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
       if (sessionError) throw sessionError;
       setSession(sessionData);
 
-      // Fetch top 3 ideas
       const { data: ideasData, error: ideasError } = await supabase
         .from("ideas")
         .select("*")
@@ -46,7 +44,6 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     fetchSessionAndTopIdeas();
 
-    // Set up real-time subscription for ideas
     const ideasSubscription = supabase
       .channel(`ideas_${sessionId}`)
       .on('postgres_changes', 
@@ -69,6 +66,13 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
         .sort((a, b) => b.upvotes - a.upvotes)
         .slice(0, 3);
     });
+  };
+
+  const handleIdeaDelete = (deletedIdeaId: string) => {
+    setTopIdeas(prevTopIdeas => 
+      prevTopIdeas.filter(idea => idea.id !== deletedIdeaId)
+    );
+    fetchSessionAndTopIdeas(); // Refetch to ensure we have the top 3 ideas
   };
 
   if (isLoading) return <div>Loading session...</div>;
@@ -101,6 +105,7 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
         sessionId={session.id} 
         sessionCreatorId={session.creator_id} 
         onIdeaUpdate={handleIdeaUpdate}
+        onIdeaDelete={handleIdeaDelete}
       />
     </div>
   );
