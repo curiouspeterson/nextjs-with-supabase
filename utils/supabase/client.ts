@@ -18,7 +18,8 @@ export const customFetch = async (path: string, options: RequestInit = {}) => {
     },
   });
   if (!res.ok) throw new Error('API request failed');
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 };
 
 export default {

@@ -30,7 +30,7 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
         const { data: { user } } = await supabase.createClient().auth.getUser();
         if (user) {
           const data = await supabase.customFetch(`/upvotes?select=*&idea_id=eq.${idea.id}&user_id=eq.${user.id}`);
-          setHasUpvoted(data.length > 0);
+          setHasUpvoted(data && data.length > 0);
         }
       } catch (err) {
         console.error("Error checking upvote status:", err);
@@ -40,7 +40,7 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
     const fetchComments = async () => {
       try {
         const data = await supabase.customFetch(`/comments?select=*&idea_id=eq.${idea.id}&order=created_at.asc`);
-        setComments(data);
+        setComments(data || []);
       } catch (error) {
         console.error("Error fetching comments:", error);
       }
@@ -51,6 +51,8 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
   }, [idea.id, supabase]);
 
   const handleUpvote = async () => {
+    if (!supabase) return;
+
     try {
       const { data: { user } } = await supabase.createClient().auth.getUser();
       if (!user) return;
@@ -59,16 +61,23 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
         await supabase.customFetch(`/upvotes?idea_id=eq.${idea.id}&user_id=eq.${user.id}`, {
           method: 'DELETE',
         });
-        setUpvotes(upvotes - 1);
+        setUpvotes(prev => prev - 1);
         setHasUpvoted(false);
       } else {
         await supabase.customFetch('/upvotes', {
           method: 'POST',
           body: JSON.stringify({ idea_id: idea.id, user_id: user.id }),
         });
-        setUpvotes(upvotes + 1);
+        setUpvotes(prev => prev + 1);
         setHasUpvoted(true);
       }
+
+      // Update the idea's upvote count in the database
+      await supabase.customFetch(`/ideas?id=eq.${idea.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ upvotes: hasUpvoted ? upvotes - 1 : upvotes + 1 }),
+      });
+
     } catch (error) {
       console.error("Error handling upvote:", error);
     }
