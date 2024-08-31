@@ -57,12 +57,18 @@ export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, on
 
   const handleDeleteIdea = async (ideaId: string) => {
     try {
-      const { error } = await supabase
+      const result = await supabase
         .from('ideas')
         .delete()
         .eq('id', ideaId);
 
-      if (error) throw error;
+      if (result === null) {
+        throw new Error('Unexpected null response from Supabase');
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
 
       setIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
       onIdeaDelete(ideaId);

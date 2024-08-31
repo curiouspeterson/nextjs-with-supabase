@@ -18,11 +18,21 @@ export default function SessionList({ initialSessions = [] }: { initialSessions:
       
       let query = supabase
         .from("sessions")
-        .select("*, session_invitations!inner(email)")
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (user) {
-        query = query.or(`is_private.eq.false,creator_id.eq.${user.id},session_invitations.email.eq.${user.email}`);
+        query = query.or(`is_private.eq.false,creator_id.eq.${user.id}`);
+        
+        const { data: invitations, error: invitationError } = await supabase
+          .from("session_invitations")
+          .select("session_id")
+          .eq("email", user.email);
+
+        if (!invitationError && invitations.length > 0) {
+          const invitedSessionIds = invitations.map(inv => inv.session_id);
+          query = query.or(`id.in.(${invitedSessionIds.join(',')})`);
+        }
       } else {
         query = query.eq("is_private", false);
       }
