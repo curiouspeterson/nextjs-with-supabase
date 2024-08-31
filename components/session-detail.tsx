@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Session, Idea } from "@/types";
 import IdeaList from "./idea-list";
+import InviteForm from "@/components/invite-form";
 
 export default function SessionDetail({ sessionId }: { sessionId: string }) {
   const [session, setSession] = useState<Session | null>(null);
   const [topIdeas, setTopIdeas] = useState<Idea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const supabase = createClient();
 
   const fetchSessionAndTopIdeas = async () => {
@@ -68,6 +70,22 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
     fetchSessionAndTopIdeas(); // Refetch to ensure we have the top 3 ideas
   };
 
+  useEffect(() => {
+    if (session?.time_limit) {
+      const endTime = new Date(session.created_at).getTime() + session.time_limit * 60000;
+      const updateTimeRemaining = () => {
+        const now = new Date().getTime();
+        const remaining = Math.max(0, endTime - now);
+        setTimeRemaining(Math.floor(remaining / 1000));
+      };
+      
+      updateTimeRemaining();
+      const timer = setInterval(updateTimeRemaining, 1000);
+      
+      return () => clearInterval(timer);
+    }
+  }, [session]);
+
   if (isLoading) return <div>Loading session...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!session) return <div>Session not found</div>;
@@ -76,6 +94,13 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
     <div>
       <h1 className="text-2xl font-bold mb-4">{session.title}</h1>
       <p className="mb-6">{session.prompt}</p>
+      
+      {timeRemaining !== null && (
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Time Remaining:</h3>
+          <p>{Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
+        </div>
+      )}
       
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-3">Top Ideas</h2>
@@ -100,6 +125,13 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
         onIdeaUpdate={handleIdeaUpdate}
         onIdeaDelete={handleIdeaDelete}
       />
+      
+      {session.is_private && (
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-4">Invite Participants</h3>
+          <InviteForm sessionId={session.id} />
+        </div>
+      )}
     </div>
   );
 }

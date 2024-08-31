@@ -12,6 +12,33 @@ export default function SessionList({ initialSessions = [] }: { initialSessions:
   const supabase = createClient();
 
   useEffect(() => {
+    const fetchSessions = async () => {
+      setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      let query = supabase
+        .from("sessions")
+        .select("*, session_invitations!inner(email)")
+        .order("created_at", { ascending: false });
+
+      if (user) {
+        query = query.or(`is_private.eq.false,creator_id.eq.${user.id},session_invitations.email.eq.${user.email}`);
+      } else {
+        query = query.eq("is_private", false);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        setError("Error fetching sessions");
+      } else {
+        setSessions(data || []);
+      }
+      setIsLoading(false);
+    };
+
+    fetchSessions();
+    
     const subscription = supabase
       .channel('public:sessions')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, handleChange)

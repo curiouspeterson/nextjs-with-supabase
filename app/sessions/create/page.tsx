@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 
 export default function CreateSession() {
   const [title, setTitle] = useState("");
@@ -13,6 +14,10 @@ export default function CreateSession() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [timeLimit, setTimeLimit] = useState<number | null>(null);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [inviteEmails, setInviteEmails] = useState<string[]>([]);
+
   const router = useRouter();
   const supabase = createClient();
 
@@ -38,22 +43,40 @@ export default function CreateSession() {
     try {
       const { data, error } = await supabase
         .from("sessions")
-        .insert([{ title, prompt, creator_id: userId }])
+        .insert([{ 
+          title, 
+          prompt, 
+          creator_id: userId,
+          time_limit: timeLimit,
+          is_private: isPrivate
+        }])
         .select();
 
-      if (error) {
-        console.error("Error creating session:", error);
-        setError(`Failed to create session: ${error.message}`);
-        setIsSubmitting(false);
-      } else if (data && data.length > 0) {
-        router.push(`/sessions/${data[0].id}`);
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const sessionId = data[0].id;
+        
+        if (isPrivate && inviteEmails.length > 0) {
+          const invitations = inviteEmails.map(email => ({
+            session_id: sessionId,
+            email
+          }));
+          
+          const { error: inviteError } = await supabase
+            .from("session_invitations")
+            .insert(invitations);
+          
+          if (inviteError) throw inviteError;
+        }
+        
+        router.push(`/sessions/${sessionId}`);
       } else {
-        setError("No data returned after creating session");
-        setIsSubmitting(false);
+        throw new Error("No data returned after creating session");
       }
     } catch (err) {
-      console.error("Unexpected error:", err);
-      setError("An unexpected error occurred");
+      console.error("Error creating session:", err);
+      setError("Failed to create session. Please try again.");
       setIsSubmitting(false);
     }
   };
@@ -84,6 +107,43 @@ export default function CreateSession() {
             required
           />
         </div>
+        
+        <div>
+          <label htmlFor="timeLimit" className="block mb-2">
+            Time Limit (minutes, optional)
+          </label>
+          <Input
+            id="timeLimit"
+            type="number"
+            value={timeLimit || ""}
+            onChange={(e) => setTimeLimit(e.target.value ? parseInt(e.target.value) : null)}
+            min="1"
+          />
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="isPrivate"
+            checked={isPrivate}
+            onCheckedChange={setIsPrivate}
+          />
+          <label htmlFor="isPrivate">Private Session</label>
+        </div>
+        
+        {isPrivate && (
+          <div>
+            <label htmlFor="inviteEmails" className="block mb-2">
+              Invite Emails (comma-separated)
+            </label>
+            <Input
+              id="inviteEmails"
+              value={inviteEmails.join(", ")}
+              onChange={(e) => setInviteEmails(e.target.value.split(",").map(email => email.trim()))}
+              placeholder="email1@example.com, email2@example.com"
+            />
+          </div>
+        )}
+        
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create Session"}
         </Button>

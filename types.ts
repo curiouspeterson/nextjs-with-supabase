@@ -5,6 +5,9 @@ export interface Session {
   creator_id: string;
   created_at: string;
   updated_at: string;
+  time_limit: number | null;
+  is_private: boolean;
+  invite_code: string;
 }
 
 export interface Idea {

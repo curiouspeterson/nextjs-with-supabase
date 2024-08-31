@@ -8,6 +8,12 @@ CREATE TABLE sessions (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Add new columns to the sessions table
+ALTER TABLE sessions
+ADD COLUMN time_limit INTEGER,
+ADD COLUMN is_private BOOLEAN DEFAULT false,
+ADD COLUMN invite_code UUID DEFAULT uuid_generate_v4();
+
 -- Create ideas table
 CREATE TABLE ideas (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -63,3 +69,11 @@ CREATE POLICY "Any user can update idea upvotes" ON ideas FOR UPDATE USING (true
 -- Comments policies
 CREATE POLICY "Comments are viewable by everyone" ON comments FOR SELECT USING (true);
 CREATE POLICY "Any user can insert comments" ON comments FOR INSERT WITH CHECK (true);
+
+-- Create a new table for session invitations
+CREATE TABLE session_invitations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
