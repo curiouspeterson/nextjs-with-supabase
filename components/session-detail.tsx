@@ -16,6 +16,7 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
   const [roundTime, setRoundTime] = useState<number | null>(null);
   const [isRoundActive, setIsRoundActive] = useState(false);
   const [roundEndTime, setRoundEndTime] = useState<Date | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const supabase = createClient();
 
   const fetchSessionAndTopIdeas = async () => {
@@ -57,6 +58,13 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
         fetchSessionAndTopIdeas
       )
       .subscribe();
+
+    // Fetch current user
+    const fetchCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    fetchCurrentUser();
 
     return () => {
       ideasSubscription.unsubscribe();
