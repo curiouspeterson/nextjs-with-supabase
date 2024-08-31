@@ -42,12 +42,19 @@ export default function IdeaForm({ sessionId, onIdeaAdded, isDisabled }: IdeaFor
     try {
       let imagePath = null;
       if (image) {
-        const { data, error } = await supabase.storage
+        const fileExt = image.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${sessionId}/${fileName}`;
+
+        const { data, error: uploadError } = await supabase.storage
           .from('idea-images')
-          .upload(`${sessionId}/${Date.now()}-${image.name}`, image);
+          .upload(filePath, image);
         
-        if (error) throw error;
-        imagePath = data.path;
+        if (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          throw new Error("Failed to upload image. Please try again.");
+        }
+        imagePath = data?.path;
       }
 
       const { data, error } = await supabase
@@ -58,15 +65,17 @@ export default function IdeaForm({ sessionId, onIdeaAdded, isDisabled }: IdeaFor
 
       if (error) {
         console.error("Error submitting idea:", error);
-        setError("Failed to submit idea. Please try again.");
-      } else if (data) {
+        throw new Error("Failed to submit idea. Please try again.");
+      }
+
+      if (data) {
         setContent("");
         setImage(null);
         onIdeaAdded(data as Idea);
       }
     } catch (err) {
       console.error("Unexpected error:", err);
-      setError("An unexpected error occurred");
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }
