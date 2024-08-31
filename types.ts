@@ -17,6 +17,7 @@ export interface Idea {
   upvotes: number;
   creator_id: string;
   created_at: string;
+  image_path?: string; // Add this line
 }
 
 export interface Comment {
