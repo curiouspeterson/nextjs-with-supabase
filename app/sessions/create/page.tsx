@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 export default function CreateSession() {
@@ -120,7 +121,6 @@ export default function CreateSession() {
             min="1"
           />
         </div>
-        
         <div className="flex items-center space-x-2">
           <Switch
             id="isPrivate"

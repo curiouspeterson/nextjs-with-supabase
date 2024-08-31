@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Session, Idea } from "@/types";
 import IdeaList from "./idea-list";
-import InviteForm from "@/components/invite-form";
+import InviteForm from './invite-form';
 
 export default function SessionDetail({ sessionId }: { sessionId: string }) {
   const [session, setSession] = useState<Session | null>(null);
