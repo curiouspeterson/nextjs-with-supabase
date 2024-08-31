@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import IdeaCard from "@/components/idea-card";
 import IdeaForm from "@/components/idea-form";
-import { Idea, Session } from "@/types";
+import { Idea } from "@/types";
 
 interface IdeaListProps {
   sessionId: string;
   sessionCreatorId: string;
+  onIdeaUpdate: (updatedIdea: Idea) => void;
 }
 
-export default function IdeaList({ sessionId, sessionCreatorId }: IdeaListProps) {
+export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate }: IdeaListProps) {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,10 +55,19 @@ export default function IdeaList({ sessionId, sessionCreatorId }: IdeaListProps)
 
   const handleNewIdea = (newIdea: Idea) => {
     setIdeas(prevIdeas => [newIdea, ...prevIdeas].sort((a, b) => b.upvotes - a.upvotes));
+    onIdeaUpdate(newIdea);
   };
 
   const handleDeleteIdea = (ideaId: string) => {
     setIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
+  };
+
+  const handleIdeaUpdate = (updatedIdea: Idea) => {
+    setIdeas(prevIdeas => 
+      prevIdeas.map(idea => idea.id === updatedIdea.id ? updatedIdea : idea)
+        .sort((a, b) => b.upvotes - a.upvotes)
+    );
+    onIdeaUpdate(updatedIdea);
   };
 
   if (isLoading) return <div>Loading ideas...</div>;
@@ -76,6 +86,7 @@ export default function IdeaList({ sessionId, sessionCreatorId }: IdeaListProps)
               idea={idea} 
               sessionCreatorId={sessionCreatorId}
               onDelete={handleDeleteIdea}
+              onUpdate={handleIdeaUpdate}
             />
           ))
         )}

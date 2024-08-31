@@ -11,9 +11,10 @@ interface IdeaCardProps {
   idea: Idea;
   sessionCreatorId: string;
   onDelete: (ideaId: string) => void;
+  onUpdate: (updatedIdea: Idea) => void;
 }
 
-export default function IdeaCard({ idea, sessionCreatorId, onDelete }: IdeaCardProps) {
+export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }: IdeaCardProps) {
   const [upvotes, setUpvotes] = useState(idea.upvotes);
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -75,10 +76,13 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete }: IdeaCardP
       }
 
       // Update the idea's upvote count in the database
+      const updatedIdea = { ...idea, upvotes: hasUpvoted ? upvotes - 1 : upvotes + 1 };
       await supabase.customFetch(`/ideas?id=eq.${idea.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ upvotes: hasUpvoted ? upvotes - 1 : upvotes + 1 }),
+        body: JSON.stringify({ upvotes: updatedIdea.upvotes }),
       });
+
+      onUpdate(updatedIdea);
 
     } catch (error) {
       console.error("Error handling upvote:", error);

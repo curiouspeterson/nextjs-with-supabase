@@ -60,6 +60,17 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
     };
   }, [sessionId]);
 
+  const handleIdeaUpdate = (updatedIdea: Idea) => {
+    setTopIdeas(prevTopIdeas => {
+      const updatedTopIdeas = prevTopIdeas.map(idea => 
+        idea.id === updatedIdea.id ? updatedIdea : idea
+      );
+      return updatedTopIdeas
+        .sort((a, b) => b.upvotes - a.upvotes)
+        .slice(0, 3);
+    });
+  };
+
   if (isLoading) return <div>Loading session...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!session) return <div>Session not found</div>;
@@ -86,7 +97,11 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
       </div>
 
       <h2 className="text-xl font-semibold mb-3">All Ideas</h2>
-      <IdeaList sessionId={session.id} sessionCreatorId={session.creator_id} />
+      <IdeaList 
+        sessionId={session.id} 
+        sessionCreatorId={session.creator_id} 
+        onIdeaUpdate={handleIdeaUpdate}
+      />
     </div>
   );
 }
