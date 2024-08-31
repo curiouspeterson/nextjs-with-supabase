@@ -62,7 +62,10 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
   };
 
   const handleIdeaDelete = (deletedIdeaId: string) => {
-    fetchSessionAndTopIdeas();
+    setTopIdeas(prevTopIdeas => 
+      prevTopIdeas.filter(idea => idea.id !== deletedIdeaId)
+    );
+    fetchSessionAndTopIdeas(); // Refetch to ensure we have the top 3 ideas
   };
 
   if (isLoading) return <div>Loading session...</div>;
