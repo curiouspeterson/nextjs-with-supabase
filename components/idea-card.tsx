@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
 import { Button } from "./ui/button";
 import { ThumbsUp, Trash2 } from "lucide-react";
 import { Idea, Comment } from "@/types";
@@ -18,34 +19,34 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
   const [upvotes, setUpvotes] = useState(idea.upvotes);
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [supabase, setSupabase] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
-    import('@/utils/supabase/client').then((module) => {
-      setSupabase({
-        createClient: module.createClient,
-        customFetch: module.customFetch,
-      });
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!supabase) return;
-
     const fetchUserAndCheckUpvote = async () => {
-      const { data: { user } } = await supabase.createClient().auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
 
       if (user) {
-        const data = await supabase.customFetch(`/upvotes?select=*&idea_id=eq.${idea.id}&user_id=eq.${user.id}`);
-        setHasUpvoted(data && data.length > 0);
+        const { data } = await supabase
+          .from("upvotes")
+          .select("*")
+          .eq("idea_id", idea.id)
+          .eq("user_id", user.id)
+          .single();
+        setHasUpvoted(!!data);
       }
     };
 
     const fetchComments = async () => {
       try {
-        const data = await supabase.customFetch(`/comments?select=*&idea_id=eq.${idea.id}&order=created_at.asc`);
+        const { data, error } = await supabase
+          .from("comments")
+          .select("*")
+          .eq("idea_id", idea.id)
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
         setComments(data || []);
       } catch (error) {
         console.error("Error fetching comments:", error);
@@ -57,39 +58,39 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
   }, [idea.id, supabase]);
 
   const handleUpvote = async () => {
-    if (!supabase || !currentUserId) return;
+    if (!currentUserId) return;
 
     try {
       if (hasUpvoted) {
-        await supabase.customFetch(`/upvotes?idea_id=eq.${idea.id}&user_id=eq.${currentUserId}`, {
-          method: 'DELETE',
-        });
+        await supabase
+          .from("upvotes")
+          .delete()
+          .eq("idea_id", idea.id)
+          .eq("user_id", currentUserId);
         setUpvotes(prev => prev - 1);
         setHasUpvoted(false);
       } else {
-        await supabase.customFetch('/upvotes', {
-          method: 'POST',
-          body: JSON.stringify({ idea_id: idea.id, user_id: currentUserId }),
-        });
+        await supabase
+          .from("upvotes")
+          .insert({ idea_id: idea.id, user_id: currentUserId });
         setUpvotes(prev => prev + 1);
         setHasUpvoted(true);
       }
 
       const updatedIdea = { ...idea, upvotes: hasUpvoted ? upvotes - 1 : upvotes + 1 };
-      await supabase.customFetch(`/ideas?id=eq.${idea.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ upvotes: updatedIdea.upvotes }),
-      });
+      await supabase
+        .from("ideas")
+        .update({ upvotes: updatedIdea.upvotes })
+        .eq("id", idea.id);
 
       onUpdate(updatedIdea);
-
     } catch (error) {
       console.error("Error handling upvote:", error);
     }
   };
 
   const handleDelete = async () => {
-    if (!supabase || !currentUserId) return;
+    if (!currentUserId) return;
 
     try {
       const { error } = await supabase
