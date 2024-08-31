@@ -12,39 +12,52 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
+  const fetchSessionAndTopIdeas = async () => {
+    try {
+      // Fetch session details
+      const { data: sessionData, error: sessionError } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("id", sessionId)
+        .single();
+
+      if (sessionError) throw sessionError;
+      setSession(sessionData);
+
+      // Fetch top 3 ideas
+      const { data: ideasData, error: ideasError } = await supabase
+        .from("ideas")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("upvotes", { ascending: false })
+        .limit(3);
+
+      if (ideasError) throw ideasError;
+      setTopIdeas(ideasData);
+
+    } catch (error) {
+      console.error("Error fetching session or ideas:", error);
+      setError("Error fetching session details");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchSessionAndTopIdeas = async () => {
-      try {
-        // Fetch session details
-        const { data: sessionData, error: sessionError } = await supabase
-          .from("sessions")
-          .select("*")
-          .eq("id", sessionId)
-          .single();
-
-        if (sessionError) throw sessionError;
-        setSession(sessionData);
-
-        // Fetch top 3 ideas
-        const { data: ideasData, error: ideasError } = await supabase
-          .from("ideas")
-          .select("*")
-          .eq("session_id", sessionId)
-          .order("upvotes", { ascending: false })
-          .limit(3);
-
-        if (ideasError) throw ideasError;
-        setTopIdeas(ideasData);
-
-      } catch (error) {
-        console.error("Error fetching session or ideas:", error);
-        setError("Error fetching session details");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchSessionAndTopIdeas();
+
+    // Set up real-time subscription for ideas
+    const ideasSubscription = supabase
+      .channel(`ideas_${sessionId}`)
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'ideas', filter: `session_id=eq.${sessionId}` },
+        fetchSessionAndTopIdeas
+      )
+      .subscribe();
+
+    return () => {
+      ideasSubscription.unsubscribe();
+    };
   }, [sessionId]);
 
   if (isLoading) return <div>Loading session...</div>;
@@ -73,7 +86,7 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
       </div>
 
       <h2 className="text-xl font-semibold mb-3">All Ideas</h2>
-      <IdeaList sessionId={session.id} />
+      <IdeaList sessionId={session.id} sessionCreatorId={session.creator_id} />
     </div>
   );
 }

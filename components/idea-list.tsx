@@ -4,9 +4,14 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import IdeaCard from "@/components/idea-card";
 import IdeaForm from "@/components/idea-form";
-import { Idea } from "@/types";
+import { Idea, Session } from "@/types";
 
-export default function IdeaList({ sessionId }: { sessionId: string }) {
+interface IdeaListProps {
+  sessionId: string;
+  sessionCreatorId: string;
+}
+
+export default function IdeaList({ sessionId, sessionCreatorId }: IdeaListProps) {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +42,6 @@ export default function IdeaList({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     fetchIdeas();
 
-    // Set up real-time subscription
     const subscription = supabase
       .channel(`ideas_${sessionId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "ideas", filter: `session_id=eq.${sessionId}` }, fetchIdeas)
@@ -52,6 +56,10 @@ export default function IdeaList({ sessionId }: { sessionId: string }) {
     setIdeas(prevIdeas => [newIdea, ...prevIdeas].sort((a, b) => b.upvotes - a.upvotes));
   };
 
+  const handleDeleteIdea = (ideaId: string) => {
+    setIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
+  };
+
   if (isLoading) return <div>Loading ideas...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -63,7 +71,12 @@ export default function IdeaList({ sessionId }: { sessionId: string }) {
           <p>No ideas yet. Be the first to submit one!</p>
         ) : (
           ideas.map((idea) => (
-            <IdeaCard key={idea.id} idea={idea} />
+            <IdeaCard 
+              key={idea.id} 
+              idea={idea} 
+              sessionCreatorId={sessionCreatorId}
+              onDelete={handleDeleteIdea}
+            />
           ))
         )}
       </div>

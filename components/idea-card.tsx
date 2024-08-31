@@ -2,16 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { ThumbsUp } from "lucide-react";
+import { ThumbsUp, Trash2 } from "lucide-react";
 import { Idea, Comment } from "@/types";
 import CommentList from "./comment-list";
 import CommentForm from "./comment-form";
 
-export default function IdeaCard({ idea }: { idea: Idea }) {
+interface IdeaCardProps {
+  idea: Idea;
+  sessionCreatorId: string;
+  onDelete: (ideaId: string) => void;
+}
+
+export default function IdeaCard({ idea, sessionCreatorId, onDelete }: IdeaCardProps) {
   const [upvotes, setUpvotes] = useState(idea.upvotes);
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [supabase, setSupabase] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     import('@/utils/supabase/client').then((module) => {
@@ -25,15 +32,13 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
   useEffect(() => {
     if (!supabase) return;
 
-    const checkUpvoteStatus = async () => {
-      try {
-        const { data: { user } } = await supabase.createClient().auth.getUser();
-        if (user) {
-          const data = await supabase.customFetch(`/upvotes?select=*&idea_id=eq.${idea.id}&user_id=eq.${user.id}`);
-          setHasUpvoted(data && data.length > 0);
-        }
-      } catch (err) {
-        console.error("Error checking upvote status:", err);
+    const fetchUserAndCheckUpvote = async () => {
+      const { data: { user } } = await supabase.createClient().auth.getUser();
+      setCurrentUserId(user?.id || null);
+
+      if (user) {
+        const data = await supabase.customFetch(`/upvotes?select=*&idea_id=eq.${idea.id}&user_id=eq.${user.id}`);
+        setHasUpvoted(data && data.length > 0);
       }
     };
 
@@ -46,22 +51,16 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
       }
     };
 
-    checkUpvoteStatus();
+    fetchUserAndCheckUpvote();
     fetchComments();
   }, [idea.id, supabase]);
 
   const handleUpvote = async () => {
-    if (!supabase) return;
+    if (!supabase || !currentUserId) return;
 
     try {
-      const { data: { user } } = await supabase.createClient().auth.getUser();
-      if (!user) {
-        console.error("User not logged in");
-        return;
-      }
-
       if (hasUpvoted) {
-        await supabase.customFetch(`/upvotes?idea_id=eq.${idea.id}&user_id=eq.${user.id}`, {
+        await supabase.customFetch(`/upvotes?idea_id=eq.${idea.id}&user_id=eq.${currentUserId}`, {
           method: 'DELETE',
         });
         setUpvotes(prev => prev - 1);
@@ -69,7 +68,7 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
       } else {
         await supabase.customFetch('/upvotes', {
           method: 'POST',
-          body: JSON.stringify({ idea_id: idea.id, user_id: user.id }),
+          body: JSON.stringify({ idea_id: idea.id, user_id: currentUserId }),
         });
         setUpvotes(prev => prev + 1);
         setHasUpvoted(true);
@@ -86,21 +85,40 @@ export default function IdeaCard({ idea }: { idea: Idea }) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!supabase || !currentUserId) return;
+
+    try {
+      await supabase.customFetch(`/ideas?id=eq.${idea.id}`, {
+        method: 'DELETE',
+      });
+      onDelete(idea.id);
+    } catch (error) {
+      console.error("Error deleting idea:", error);
+    }
+  };
+
   const handleNewComment = (newComment: Comment) => {
     setComments(prevComments => [...prevComments, newComment]);
   };
 
+  const canDelete = currentUserId && (currentUserId === idea.creator_id || currentUserId === sessionCreatorId);
+
   return (
     <div className="border rounded-lg p-4">
-      <p className="mb-4">{idea.content}</p>
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-gray-500">
-          Submitted: {new Date(idea.created_at).toLocaleString()}
-        </span>
-        <Button onClick={handleUpvote} variant="outline" size="sm">
-          <ThumbsUp className={`mr-2 h-4 w-4 ${hasUpvoted ? 'fill-current' : ''}`} />
-          {upvotes}
-        </Button>
+      <div className="flex justify-between items-start mb-4">
+        <p className="flex-grow">{idea.content}</p>
+        <div className="flex items-center">
+          <Button onClick={handleUpvote} variant="outline" size="sm" className="mr-2">
+            <ThumbsUp className={`mr-2 h-4 w-4 ${hasUpvoted ? 'fill-current' : ''}`} />
+            {upvotes}
+          </Button>
+          {canDelete && (
+            <Button onClick={handleDelete} variant="outline" size="sm">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
       <div className="mt-4">
         <h3 className="font-semibold mb-2">Comments</h3>
