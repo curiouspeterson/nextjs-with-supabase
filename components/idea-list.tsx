@@ -11,9 +11,10 @@ interface IdeaListProps {
   sessionCreatorId: string;
   onIdeaUpdate: (updatedIdea: Idea) => void;
   onIdeaDelete: (deletedIdeaId: string) => void;
+  isRoundActive: boolean;
 }
 
-export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, onIdeaDelete }: IdeaListProps) {
+export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, onIdeaDelete, isRoundActive }: IdeaListProps) {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export default function IdeaList({ sessionId, sessionCreatorId, onIdeaUpdate, on
 
   return (
     <div>
-      <IdeaForm sessionId={sessionId} onIdeaAdded={handleNewIdea} />
+      <IdeaForm sessionId={sessionId} onIdeaAdded={handleNewIdea} isDisabled={!isRoundActive} />
       <div className="space-y-4">
         {ideas.length === 0 ? (
           <p>No ideas yet. Be the first to submit one!</p>

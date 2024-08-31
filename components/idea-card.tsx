@@ -123,7 +123,16 @@ export default function IdeaCard({ idea, sessionCreatorId, onDelete, onUpdate }:
   return (
     <div className="border rounded-lg p-4">
       <div className="flex justify-between items-start mb-4">
-        <p className="flex-grow">{idea.content}</p>
+        <div>
+          <p className="flex-grow">{idea.content}</p>
+          {idea.image_path && (
+            <img 
+              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/idea-images/${idea.image_path}`} 
+              alt="Idea illustration" 
+              className="mt-2 max-w-full h-auto"
+            />
+          )}
+        </div>
         <div className="flex items-center">
           <Button onClick={handleUpvote} variant="outline" size="sm" className="mr-2">
             <ThumbsUp className={`mr-2 h-4 w-4 ${hasUpvoted ? 'fill-current' : ''}`} />

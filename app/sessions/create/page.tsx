@@ -18,6 +18,8 @@ export default function CreateSession() {
   const [timeLimit, setTimeLimit] = useState<number | null>(null);
   const [isPrivate, setIsPrivate] = useState(false);
   const [inviteEmails, setInviteEmails] = useState<string[]>([]);
+  const [resources, setResources] = useState<string[]>([]);
+  const [newResource, setNewResource] = useState("");
 
   const router = useRouter();
   const supabase = createClient();
@@ -49,7 +51,8 @@ export default function CreateSession() {
           prompt, 
           creator_id: userId,
           time_limit: timeLimit,
-          is_private: isPrivate
+          is_private: isPrivate,
+          resources: resources
         }])
         .select();
 
@@ -80,6 +83,19 @@ export default function CreateSession() {
       setError("Failed to create session. Please try again.");
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddResource = () => {
+    if (newResource.trim() !== "") {
+      setResources([...resources, newResource]);
+      setNewResource("");
+    }
+  };
+
+  const handleRemoveResource = (index: number) => {
+    const updatedResources = [...resources];
+    updatedResources.splice(index, 1);
+    setResources(updatedResources);
   };
 
   return (
@@ -143,6 +159,37 @@ export default function CreateSession() {
             />
           </div>
         )}
+        
+        <div>
+          <label htmlFor="resources" className="block mb-2">
+            External Resources (URLs)
+          </label>
+          <div className="flex space-x-2">
+            <Input
+              id="resources"
+              value={newResource}
+              onChange={(e) => setNewResource(e.target.value)}
+              placeholder="https://example.com"
+            />
+            <Button type="button" onClick={handleAddResource}>
+              Add Resource
+            </Button>
+          </div>
+          {resources.length > 0 && (
+            <ul className="mt-2">
+              {resources.map((resource, index) => (
+                <li key={index} className="flex items-center space-x-2">
+                  <a href={resource} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                    {resource}
+                  </a>
+                  <Button type="button" variant="destructive" onClick={() => handleRemoveResource(index)}>
+                    Remove
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create Session"}

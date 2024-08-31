@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { Session, Idea } from "@/types";
 import IdeaList from "./idea-list";
 import InviteForm from './invite-form';
+import { Button } from "./ui/button";
 
 export default function SessionDetail({ sessionId }: { sessionId: string }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -12,6 +13,9 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [roundTime, setRoundTime] = useState<number | null>(null);
+  const [isRoundActive, setIsRoundActive] = useState(false);
+  const [roundEndTime, setRoundEndTime] = useState<Date | null>(null);
   const supabase = createClient();
 
   const fetchSessionAndTopIdeas = async () => {
@@ -86,6 +90,29 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
     }
   }, [session]);
 
+  const startRound = (duration: number) => {
+    setRoundTime(duration);
+    setIsRoundActive(true);
+    setRoundEndTime(new Date(Date.now() + duration * 60000));
+  };
+
+  useEffect(() => {
+    if (isRoundActive && roundEndTime) {
+      const timer = setInterval(() => {
+        const now = new Date();
+        if (now >= roundEndTime) {
+          setIsRoundActive(false);
+          setRoundEndTime(null);
+          clearInterval(timer);
+        } else {
+          setRoundTime(Math.floor((roundEndTime.getTime() - now.getTime()) / 1000));
+        }
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [isRoundActive, roundEndTime]);
+
   if (isLoading) return <div>Loading session...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!session) return <div>Session not found</div>;
@@ -99,6 +126,24 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
         <div className="mb-4">
           <h3 className="text-lg font-semibold">Time Remaining:</h3>
           <p>{Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
+        </div>
+      )}
+      
+      {session.creator_id === currentUserId && (
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Start Timed Round</h3>
+          <div className="flex space-x-2">
+            <Button onClick={() => startRound(1)}>1 Minute</Button>
+            <Button onClick={() => startRound(3)}>3 Minutes</Button>
+            <Button onClick={() => startRound(5)}>5 Minutes</Button>
+          </div>
+        </div>
+      )}
+
+      {isRoundActive && (
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Time Remaining:</h3>
+          <p>{Math.floor(roundTime! / 60)}:{(roundTime! % 60).toString().padStart(2, '0')}</p>
         </div>
       )}
       
@@ -124,6 +169,7 @@ export default function SessionDetail({ sessionId }: { sessionId: string }) {
         sessionCreatorId={session.creator_id} 
         onIdeaUpdate={handleIdeaUpdate}
         onIdeaDelete={handleIdeaDelete}
+        isRoundActive={isRoundActive}
       />
       
       {session.is_private && (

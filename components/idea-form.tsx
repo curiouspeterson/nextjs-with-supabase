@@ -9,11 +9,13 @@ import { Idea } from "@/types";
 interface IdeaFormProps {
   sessionId: string;
   onIdeaAdded: (newIdea: Idea) => void;
+  isDisabled: boolean;
 }
 
-export default function IdeaForm({ sessionId, onIdeaAdded }: IdeaFormProps) {
+export default function IdeaForm({ sessionId, onIdeaAdded, isDisabled }: IdeaFormProps) {
   const supabase = createClient();
   const [content, setContent] = useState("");
+  const [image, setImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -38,9 +40,19 @@ export default function IdeaForm({ sessionId, onIdeaAdded }: IdeaFormProps) {
     }
 
     try {
+      let imagePath = null;
+      if (image) {
+        const { data, error } = await supabase.storage
+          .from('idea-images')
+          .upload(`${sessionId}/${Date.now()}-${image.name}`, image);
+        
+        if (error) throw error;
+        imagePath = data.path;
+      }
+
       const { data, error } = await supabase
         .from("ideas")
-        .insert([{ session_id: sessionId, content, creator_id: userId }])
+        .insert([{ session_id: sessionId, content, creator_id: userId, image_path: imagePath }])
         .select()
         .single();
 
@@ -49,6 +61,7 @@ export default function IdeaForm({ sessionId, onIdeaAdded }: IdeaFormProps) {
         setError("Failed to submit idea. Please try again.");
       } else if (data) {
         setContent("");
+        setImage(null);
         onIdeaAdded(data as Idea);
       }
     } catch (err) {
@@ -60,19 +73,22 @@ export default function IdeaForm({ sessionId, onIdeaAdded }: IdeaFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-8">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <Input
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Share your idea..."
-        className="mb-4"
+        placeholder="Enter your idea"
         required
       />
-      <Button type="submit" disabled={isSubmitting || !userId}>
-        {isSubmitting ? "Submitting..." : "Submit Idea"}
+      <Input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setImage(e.target.files?.[0] || null)}
+      />
+      <Button type="submit" disabled={isSubmitting || isDisabled}>
+        {isSubmitting ? "Submitting..." : (isDisabled ? "Waiting for round to start" : "Submit Idea")}
       </Button>
-      {error && <p className="text-red-500 mt-2">{error}</p>}
-      {!userId && <p className="text-yellow-500 mt-2">Please log in to submit ideas.</p>}
+      {error && <p className="text-red-500">{error}</p>}
     </form>
   );
 }

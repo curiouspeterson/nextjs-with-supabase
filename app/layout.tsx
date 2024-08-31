@@ -38,6 +38,9 @@ export default function RootLayout({
                     <li>
                       <Link href="/sessions/create">Create Session</Link>
                     </li>
+                    <li>
+                      <Link href="/dashboard">Dashboard</Link>
+                    </li>
                   </ul>
                 </nav>
                 <div className="flex items-center space-x-4">
