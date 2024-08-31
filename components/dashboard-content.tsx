@@ -8,8 +8,12 @@ interface DashboardContentProps {
   userId: string;
 }
 
+interface IdeaWithSession extends Idea {
+  sessions: Session;
+}
+
 export default function DashboardContent({ userId }: DashboardContentProps) {
-  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [ideas, setIdeas] = useState<IdeaWithSession[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
@@ -24,7 +28,7 @@ export default function DashboardContent({ userId }: DashboardContentProps) {
           .eq('creator_id', userId);
 
         if (ideasError) throw ideasError;
-        setIdeas(ideasData);
+        setIdeas(ideasData as IdeaWithSession[]);
 
         const { data: sessionsData, error: sessionsError } = await supabase
           .from('sessions')
